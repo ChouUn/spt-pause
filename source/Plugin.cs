@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Pause
 {
-    [BepInPlugin("com.netVnum.pause", "PAUSE", "1.3.1")]
+    [BepInPlugin("com.netVnum.pause", "PAUSE", "1.4.0")]
     public class Plugin : BaseUnityPlugin
     {
 
