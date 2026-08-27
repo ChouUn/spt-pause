@@ -1,9 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net481</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>netVnum.Pause</AssemblyName>
-    <Version>1.4.0</Version>
+    <Version>1.5.0</Version>
+    <SptPath Condition="'$(SptPath)' == ''">D:\SPT-4.1</SptPath>
+    <DepsPath>$(SptPath)\EscapeFromTarkov_Data\Managed</DepsPath>
+    <DeployToSpt Condition="'$(DeployToSpt)' == ''">true</DeployToSpt>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -11,32 +14,20 @@
     <DebugType>none</DebugType>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- folder switch -->
-    <DepsPath>C:\SPT_DEV\EscapeFromTarkov_Data\Managed</DepsPath>
-  </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>none</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net471" Version="1.0.3">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>C:\SPT_DEV\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>$(SptPath)\BepInEx\core\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>$(DepsPath)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>C:\SPT_DEV\BepInEx\core\BepInEx.dll</HintPath>
+      <HintPath>$(SptPath)\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="Comfort">
       <Private>False</Private>
@@ -47,10 +38,10 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="spt-common">
-      <HintPath>C:\SPT_DEV\BepInEx\plugins\spt\spt-common.dll</HintPath>
+      <HintPath>$(SptPath)\BepInEx\plugins\spt\spt-common.dll</HintPath>
     </Reference>
     <Reference Include="spt-reflection">
-      <HintPath>C:\SPT_DEV\BepInEx\plugins\spt\spt-reflection.dll</HintPath>
+      <HintPath>$(SptPath)\BepInEx\plugins\spt\spt-reflection.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>$(DepsPath)\UnityEngine.dll</HintPath>
@@ -87,64 +78,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Update="System">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Core">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Data">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Drawing">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.IO.Compression.FileSystem">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Numerics">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Runtime.Serialization">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Xml">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Update="System.Xml.Linq">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
 
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;C:\SPT_DEV\BepInEx\plugins\$(TargetName).dll&quot;" />
+  <Target Name="DeployPlugin" AfterTargets="Build"
+          Condition="'$(DeployToSpt)' == 'true'">
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFiles="$(SptPath)\BepInEx\plugins\$(TargetName).dll" />
   </Target>
 </Project>

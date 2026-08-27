@@ -3,7 +3,6 @@ using BepInEx.Configuration;
 using BepInEx.Logging;
 using Comfort.Common;
 using EFT;
-using EFT.Animations;
 using EFT.UI.BattleTimer;
 using HarmonyLib;
 using JetBrains.Annotations;
@@ -22,7 +21,7 @@ namespace Pause
 
         private DateTime? _pausedDate;
         private DateTime? _unpausedDate;
-        private GameTimerClass _gameTimerClass;
+        private GameTimer _gameTimer;
         private MainTimerPanel _mainTimerPanel;
         private AbstractGame _abstractGame;
         private List<AudioSource> _pausedAudioSources;
@@ -32,15 +31,7 @@ namespace Pause
         private static GameWorld GameWorld;
 
         private static Player MainPlayer;
-        private static FieldInfo IsAimingField;
-
-        private static FieldInfo StartDateTime; //Nullable_0 (as DateTime?)
-        private static FieldInfo EscapeDateTime; //Nullable_1 (as DateTime?)
-        private static FieldInfo StopDateTime; //Nullable_2 (as DateTime?)
-        private static FieldInfo SessionTime; // Nullable_3 (as TimeSpan?)
-
         private static FieldInfo TimerPanelField;
-        private static FieldInfo GameDateTimeField;
 
         [UsedImplicitly]
         private void Awake()
@@ -50,16 +41,10 @@ namespace Pause
             IsPaused = false;
             _abstractGame = Singleton<AbstractGame>.Instance;
             _mainTimerPanel = FindObjectOfType<MainTimerPanel>();
-            _gameTimerClass = _abstractGame?.GameTimer;
+            _gameTimer = _abstractGame?.GameTimer;
             _pausedAudioSources = new List<AudioSource>(); 
 
-            IsAimingField = AccessTools.Field(typeof(ProceduralWeaponAnimation), "_isAiming");
-            StartDateTime = AccessTools.Field(typeof(GameTimerClass), "Nullable_0");
-            EscapeDateTime = AccessTools.Field(typeof(GameTimerClass), "Nullable_1");
-            StopDateTime = AccessTools.Field(typeof(GameTimerClass), "Nullable_2");
-            SessionTime = AccessTools.Field(typeof(GameTimerClass), "Nullable_3");
-            TimerPanelField = AccessTools.Field(typeof(TimerPanel), "dateTime_0");
-            GameDateTimeField = AccessTools.Field(typeof(GameDateTime), "RealtimeSinceStartup");
+            TimerPanelField = AccessTools.Field(typeof(TimerPanel), "_dateTime");
         }
 
         [UsedImplicitly]
@@ -70,12 +55,7 @@ namespace Pause
             MainPlayer = null;
             Logger = null;
             _pausedAudioSources.Clear();
-            StartDateTime = null;
-            EscapeDateTime = null;
-            StopDateTime = null;
-            SessionTime = null;
             TimerPanelField = null;
-            GameDateTimeField = null;
         }
 
         [UsedImplicitly]
@@ -232,60 +212,42 @@ namespace Pause
 
         private void UpdateTimers(TimeSpan timePaused)
         {
-            // Nullable_0 - Start Date/Time of the Raid.
-            var startDateTime = StartDateTime.GetValue(_gameTimerClass) as DateTime?;
-
-            // Nullable_1 - Start Date/Time of the Raid + Total Raid Time = Time the raid should end with no additional pauses.
-            var escapeDateTime = EscapeDateTime.GetValue(_gameTimerClass) as DateTime?;
-                    
-            // dateTime_0             
-            var timerPanelDate = TimerPanelField.GetValue(_mainTimerPanel) as DateTime?;
-
-            var realTimeSinceStartup = GameDateTimeField.GetValue(GameWorld.GameDateTime) as float?;
-
-            if (!startDateTime.HasValue || !escapeDateTime.HasValue || !timerPanelDate.HasValue || !realTimeSinceStartup.HasValue)
+            if (_gameTimer == null || _mainTimerPanel == null ||
+                GameWorld?.GameDateTime == null || TimerPanelField == null)
             {
                 return;
             }
 
-            // SET UPDATED VALUES
-            // Nullable_0
-            StartDateTime.SetValue(_gameTimerClass, startDateTime.Value.Add(timePaused));
-            // Nullable_1
-            EscapeDateTime.SetValue(_gameTimerClass, escapeDateTime.Value.Add(timePaused));
-            // Nullable_2 - Keeping this null is more reliable to prevent MIA raid endings. Some game conditions can set this variable and it changes how the game calculates remaining raid time.
-            StopDateTime.SetValue(_gameTimerClass, null);
-            // Game world timing should not include any time spent during pause.
-            GameDateTimeField.SetValue(GameWorld.GameDateTime, realTimeSinceStartup.Value + (float)timePaused.TotalSeconds);
-            // Add paused time to the UI timer(s).
-            TimerPanelField.SetValue(_mainTimerPanel, timerPanelDate.Value.Add(timePaused));
+            var startDateTime = _gameTimer.StartDateTime;
+            var escapeDateTime = _gameTimer.EscapeDateTime;
+            var timerPanelDate = TimerPanelField.GetValue(_mainTimerPanel) as DateTime?;
+
+            if (!startDateTime.HasValue || !escapeDateTime.HasValue ||
+                !timerPanelDate.HasValue)
+            {
+                return;
+            }
+
+            _gameTimer._startDateTime = startDateTime.Value.Add(timePaused);
+            _gameTimer._escapeDateTime = escapeDateTime.Value.Add(timePaused);
+            _gameTimer.nullable_2 = null;
+            GameWorld.GameDateTime._realtimeSinceStartup +=
+                (float)timePaused.TotalSeconds;
+            TimerPanelField.SetValue(
+                _mainTimerPanel,
+                timerPanelDate.Value.Add(timePaused));
         }
         
         private static void ResetFov()
         {
-            if (MainPlayer == null || MainPlayer.ProceduralWeaponAnimation == null || CameraClass.Instance == null)
+            var proceduralWeaponAnimation = MainPlayer?.ProceduralWeaponAnimation;
+            if (proceduralWeaponAnimation == null)
             {
                 return;
             }
 
-            var baseFov = MainPlayer.ProceduralWeaponAnimation.Single_2;
-            var targetFov = baseFov;
-
-            var isAiming = (bool)(IsAimingField?.GetValue(MainPlayer.ProceduralWeaponAnimation) ?? false);
-            var scopeAimTransformsCount = MainPlayer.ProceduralWeaponAnimation.ScopeAimTransforms?.Count ?? 0;
-
-            if (MainPlayer.ProceduralWeaponAnimation.PointOfView != EPointOfView.FirstPerson || MainPlayer.ProceduralWeaponAnimation.AimIndex >= scopeAimTransformsCount)
-            {
-                return;
-            }
-
-            if (isAiming)
-            {
-                targetFov = MainPlayer.ProceduralWeaponAnimation.CurrentScope?.IsOptic ?? false ? 35f : baseFov - 15f;
-            }
-
-            Logger.LogDebug($"Current FOV (When Unpausing): {CameraClass.Instance.Fov}, Base FOV: {baseFov}, Target FOV: {targetFov}");
-            CameraClass.Instance.SetFov(targetFov, 1f, !isAiming);
+            proceduralWeaponAnimation.OnFovChange(
+                (int)proceduralWeaponAnimation.HeadBobbing);
         }
 
         internal static void Enable()

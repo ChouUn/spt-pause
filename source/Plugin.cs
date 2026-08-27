@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Pause
 {
-    [BepInPlugin("com.netVnum.pause", "PAUSE", "1.4.0")]
+    [BepInPlugin("com.netVnum.pause", "PAUSE", "1.5.0")]
     public class Plugin : BaseUnityPlugin
     {
 
@@ -27,7 +27,6 @@ namespace Pause
 
             new WorldTickPatch().Enable();
             new OtherWorldTickPatch().Enable();
-            new GameTimerClassUpdatePatch().Enable();
             new TimerPanelPatch().Enable();
             new PlayerUpdatePatch().Enable();
             new EndByTimerScenarioUpdatePatch().Enable();

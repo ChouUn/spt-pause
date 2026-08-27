@@ -37,17 +37,6 @@ namespace Pause
         }
     }
 
-    public class GameTimerClassUpdatePatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod() => AccessTools.Method(typeof(GameTimerClass), nameof(GameTimerClass.method_0));
-
-        [PatchPrefix]
-        internal static bool Prefix()
-        {
-            return !PauseController.IsPaused;
-        }
-    }
-
     public class TimerPanelPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod() => AccessTools.Method(typeof(TimerPanel), nameof(TimerPanel.UpdateTimer));
