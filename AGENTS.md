@@ -25,6 +25,16 @@ The first command builds without deployment; the second copies the release DLL
 to the configured SPT installation. After building, start SPT, enter an offline
 raid, and use `F9` to exercise the plugin.
 
+Create the versioned, install-ready ZIP without deploying it into SPT:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+    -File scripts\package-release.ps1
+```
+
+Pass `-SptPath "E:\SPT"` to package against another SPT installation. The script
+prints the package path and SHA-256 after a successful build.
+
 ## Coding Style & Naming Conventions
 
 Follow the existing C# style: four-space indentation, braces on separate lines,

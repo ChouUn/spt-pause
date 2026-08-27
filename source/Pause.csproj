@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-    <AssemblyName>netVnum.Pause</AssemblyName>
+    <AssemblyName>ChouUn.Pause</AssemblyName>
     <Version>1.5.0</Version>
     <SptPath Condition="'$(SptPath)' == ''">D:\SPT-4.1</SptPath>
     <DepsPath>$(SptPath)\EscapeFromTarkov_Data\Managed</DepsPath>

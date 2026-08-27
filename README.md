@@ -35,7 +35,37 @@ dotnet build Pause.sln -c Release -p:SptPath="E:\SPT"
 ```
 
 Combine `-p:SptPath="E:\SPT"` with `-p:DeployToSpt=false` to use another
-installation only for assembly references. Build output is written under
-`source\bin\<Configuration>\netstandard2.1\`. After code changes, test pause and
-resume in an offline raid, including AI, audio, FOV, time of day, and the raid
-timer.
+installation only for assembly references.
+
+Create an install-ready release ZIP without deploying into SPT:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+    -File scripts\package-release.ps1
+```
+
+Override the SPT installation used for assembly references when needed:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+    -File scripts\package-release.ps1 `
+    -SptPath "E:\SPT"
+```
+
+The script reads the version and target framework from `source\Pause.csproj`,
+builds with `DeployToSpt=false`, and writes the ZIP plus its SHA-256 under
+`source\bin\Release\netstandard2.1\`. After code changes, test pause and resume
+in an offline raid, including AI, audio, FOV, time of day, and the raid timer.
+
+## Contributors
+
+The repository's Git history contains contributions from:
+
+- ChouUn
+- dvize
+- Matt Swafford
+- netvnum
+- nyrus06
+- RageLtd
+- Tim Zenner
+- Yahkub-R
